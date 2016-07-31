@@ -2,6 +2,37 @@ var express = require('express');
 var router = express.Router();
 var http = require('http');
 
+var activityBeacons =
+    [{
+        title: "B",
+        lat: "-35.304758",
+        lon: "149.122853"
+    }, {
+        title: "C",
+        lat: "-35.292708",
+        lon: "149.14113"
+    }, {
+        title: "D",
+        lat: "-35.340516",
+        lon: "149.02371"
+    }
+    , {
+        title: "E",
+        lat: "-35.349983",
+        lon: "149.022679"
+    }
+    , {
+        title: "F",
+        lat: "-35.398483",
+        lon: "149.013281"
+    }
+    , {
+        title: "G",
+        lat: "-35.138331",
+        lon: "149.14803"
+    }
+];
+
 /* GET users listing. */
 router.get('/', function(req, res, next) {
   res.send('get an animal!');
@@ -9,6 +40,29 @@ router.get('/', function(req, res, next) {
 
 router.get('/:lat/:long', function(req, res, next) {
   getSpecies(req.params.lat, req.params.long)
+  .then(data => data.occurrences)
+  .then(data => {
+    return data.filter(item => {
+      return item.speciesGroups.indexOf('Animals') > -1;
+    })
+  })
+  .then(data => data.map(item => item.vernacularName))
+  .then(data => data[randomIntFromInterval(0,data.length -1)])
+  .then(data => res.send({data}));
+});
+
+router.get('/activity/:lat/:long', function(req, res, next) {
+
+  var position = newPosition(req.params.lat, req.params.long);
+  var closeLocations = activityBeacons.filter(beacon => arePointsNear(position, newPosition(beacon.lat, beacon.lon)));
+
+  if(closeLocations.length === 0){
+    res.send({data: 'Not in range'})
+  }
+
+  var newP = newPosition(closeLocations[0].lat, closeLocations[0].lon);
+
+  getSpecies(newP.lat, newP.lng)
   .then(data => data.occurrences)
   .then(data => {
     return data.filter(item => {
@@ -58,18 +112,29 @@ router.get('/all/:lat/:long', function(req, res, next) {
 
  }
 
+function newPosition(lat, lng){
+  return { lat: lat, lng: lng };
+}
+
  function randomIntFromInterval(min,max) {
      return Math.floor(Math.random()*(max-min+1)+min);
  }
 
- function getUnique(arr)
- {
+ function getUnique(arr){
  	var n = [];
  	for(var i = 0; i < arr.length; i++)
  	{
  		if (n.indexOf(arr[i]) == -1) n.push(arr[i]);
  	}
  	return n;
+ }
+
+ function arePointsNear(checkPoint, centerPoint, km) {
+   var ky = 40000 / 360;
+   var kx = Math.cos(Math.PI * centerPoint.lat / 180.0) * ky;
+   var dx = Math.abs(centerPoint.lng - checkPoint.lng) * kx;
+   var dy = Math.abs(centerPoint.lat - checkPoint.lat) * ky;
+   return Math.sqrt(dx * dx + dy * dy) === 0 ? true : Math.sqrt(dx * dx + dy * dy)  <= km;
  }
 
 module.exports = router;

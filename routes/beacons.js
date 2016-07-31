@@ -35,7 +35,7 @@ var activityBeacons = [{
         lat: "-35.138331",
         lon: "149.14803"
     }
-]
+];;
 
 router.get('/', function(req, res, next) {
     res.send('get all beacons!');
