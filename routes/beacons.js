@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 var http = require('http');
+var GooglePlaces = require('node-googleplaces');
+
 
 var activityBeacons = [{
         title: "A",
@@ -38,8 +40,30 @@ var activityBeacons = [{
 ];;
 
 router.get('/', function(req, res, next) {
-    res.send('get all beacons!');
+    res.send('get all beacons near me!');
 });
+
+
+
+router.get('/:lat/:long', function(req, res, next) {
+  const places = new GooglePlaces('AIzaSyCw5Ps26fT2bt-Lp-b2--2po84rCfWZtTc');
+  const query = {
+    location: req.params.lat + ',' + req.params.long,
+    radius: 500
+  };
+
+  // Promise
+  places.nearbySearch(query).then((response) => {
+    res.send(response.body.results
+                .map(result => ({
+                  title: result.name,
+                  lat: result.geometry.location.lat,
+                  lon: result.geometry.location.lng
+                })));
+  });
+});
+
+
 router.get('/?id', function(req, res, next) {
     res.send('get beacon!' + req.params.id);
 });
@@ -50,6 +74,8 @@ router.get('/activities/', function(req, res, next) {
 router.get('/activities/?id', function(req, res, next) {
     res.send('get beacon by id!' + req.params.id);
 });
+
+
 
 
 module.exports = router;
